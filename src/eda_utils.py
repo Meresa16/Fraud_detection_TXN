@@ -103,3 +103,109 @@ def plot_missing_heatmap(df: pd.DataFrame, sample_frac: float = 0.2):
     plt.title("Missing Values Map (Yellow = Missing)")
     plt.xlabel("Columns")
     plt.show()
+
+
+
+# ======================================================
+# Fraud-Specific EDA Utilities
+# ======================================================
+
+def class_imbalance_report(df: pd.DataFrame, target: str = "Is_Fraud"):
+    """Print class imbalance metrics"""
+    if target not in df.columns:
+        print(f"{target} not found.")
+        return
+    vc = df[target].value_counts()
+    ratio = vc.min() / vc.max()
+    print("Class Distribution:")
+    display(vc)
+    print(f"Minority/Majority Ratio: {ratio:.4f}")
+
+
+def fraud_rate_by_feature(
+    df: pd.DataFrame,
+    feature: str,
+    target: str = "Is_Fraud",
+    top_n: int = 10
+):
+    """Fraud rate by categorical feature"""
+    if feature not in df.columns or target not in df.columns:
+        return
+    stats = (
+        df.groupby(feature)[target]
+        .agg(["mean", "count"])
+        .sort_values("mean", ascending=False)
+        .head(top_n)
+    )
+    print(f"Fraud rate by {feature}")
+    display(stats)
+
+    plt.figure(figsize=(8, 4))
+    sns.barplot(x=stats["mean"], y=stats.index)
+    plt.xlabel("Fraud Rate")
+    plt.title(f"Fraud Rate by {feature}")
+    plt.show()
+
+
+def fraud_by_time(
+    df: pd.DataFrame,
+    hour_col: str = "Transaction_Hour",
+    weekday_col: str = "Transaction_Weekday",
+    target: str = "Is_Fraud"
+):
+    """Fraud patterns by time"""
+    if hour_col in df.columns:
+        plt.figure(figsize=(8, 3))
+        df.groupby(hour_col)[target].mean().plot(kind="bar")
+        plt.title("Fraud Rate by Hour")
+        plt.ylabel("Fraud Rate")
+        plt.show()
+
+    if weekday_col in df.columns:
+        plt.figure(figsize=(8, 3))
+        df.groupby(weekday_col)[target].mean().plot(kind="bar")
+        plt.title("Fraud Rate by Weekday (0=Mon)")
+        plt.ylabel("Fraud Rate")
+        plt.show()
+
+
+def amount_outlier_analysis(
+    df: pd.DataFrame,
+    amount_col: str = "Transaction_Amount",
+    target: str = "Is_Fraud"
+):
+    """Analyze transaction amount outliers"""
+    if amount_col not in df.columns:
+        return
+
+    plt.figure(figsize=(8, 4))
+    if target in df.columns:
+        sns.boxplot(x=df[target].astype(str), y=df[amount_col])
+        plt.title("Transaction Amount by Fraud Label")
+    else:
+        sns.boxplot(y=df[amount_col])
+        plt.title("Transaction Amount Distribution")
+
+    plt.yscale("log")
+    plt.show()
+
+    q1 = df[amount_col].quantile(0.25)
+    q3 = df[amount_col].quantile(0.75)
+    iqr = q3 - q1
+    threshold = q3 + 1.5 * iqr
+
+    print(f"High-value threshold (IQR): {threshold:.2f}")
+    print("Fraud rate above threshold:")
+    display(df[df[amount_col] > threshold][target].mean())
+
+
+def feature_cardinality(df: pd.DataFrame, max_unique: int = 30):
+    """Check categorical feature cardinality"""
+    cats = df.select_dtypes(include=["object", "category"]).columns
+    report = {
+        c: df[c].nunique()
+        for c in cats
+        if df[c].nunique() <= max_unique
+    }
+    print("Categorical Feature Cardinality:")
+    display(pd.Series(report).sort_values(ascending=False))
