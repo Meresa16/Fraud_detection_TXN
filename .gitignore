@@ -1,0 +1,75 @@
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# =========================
+# Virtual Environments
+# =========================
+venv/
+env/
+.venv/
+ENV/
+
+# =========================
+# Jupyter Notebook
+# =========================
+.ipynb_checkpoints/
+
+# =========================
+# Data files (DO NOT PUSH RAW DATA)
+# =========================
+data/raw/
+data/interim/
+data/external/
+
+# If processed data is large, ignore it too
+# data/processed/
+
+# =========================
+# Models & artifacts
+# =========================
+model/*.pkl
+model/*.joblib
+
+# =========================
+# Logs & temporary files
+# =========================
+*.log
+*.tmp
+*.bak
+
+# =========================
+# OS files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Streamlit
+# =========================
+.streamlit/secrets.toml
+
+# =========================
+# IDEs & Editors
+# =========================
+.vscode/
+.idea/
+.spyderproject
+.spyproject
+
+# =========================
+# Python packaging
+# =========================
+build/
+dist/
+*.egg-info/
+
+# =========================
+# Environment variables
+# =========================
+.env
