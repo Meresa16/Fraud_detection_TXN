@@ -54,6 +54,8 @@ Thumbs.db
 # =========================
 .streamlit/secrets.toml
 
+#mlruns
+mlruns/
 # =========================
 # IDEs & Editors
 # =========================
