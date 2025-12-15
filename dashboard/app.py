@@ -1,102 +1,3 @@
-
-
-
-# # dashboard/app.py
-# import streamlit as st
-# import pandas as pd
-# import joblib
-# import numpy as np
-# import os
-
-# # =========================
-# # Paths
-# # =========================
-# BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-# DATA_DIR = os.path.join(BASE_DIR, "../data/processed")
-# MODEL_DIR = os.path.join(BASE_DIR, "../model")
-
-# FEATURES_DATA_PATH = os.path.join(DATA_DIR, "bank_transactions_features.csv")
-# MODEL_PATH = os.path.join(MODEL_DIR, "rf_model_imbalanced.pkl")       # your trained RF model
-# COLUMNS_PATH = os.path.join(MODEL_DIR, "columns_used.pkl") # columns used in training
-
-# # =========================
-# # Load model and columns
-# # =========================
-# model = joblib.load(MODEL_PATH)
-# columns_used = joblib.load(COLUMNS_PATH)
-
-# st.set_page_config(page_title="Fraud Prediction", layout="centered")
-# st.title("🏦 Bank Transaction Fraud Prediction")
-
-# st.markdown("Enter transaction details below to get an instant fraud prediction:")
-
-# # =========================
-# # User Inputs
-# # =========================
-# txn_amount = st.number_input("Transaction Amount", 0.0, value=2500.0)
-# txn_hour = st.slider("Transaction Hour (0-23)", 0, 23, 12)
-# txn_weekday = st.slider("Transaction Weekday (0=Mon)", 0, 6, 2)
-# account_balance = st.number_input("Account Balance", 0.0, value=50000.0)
-# avg_balance = st.number_input("Customer Avg Balance", 0.0, value=45000.0)
-# balance_dev = account_balance - avg_balance
-
-# Transaction_Device = st.selectbox(
-#     "Transaction Device",
-#     ["ATM", "POS", "Mobile App", "USSD", "Voice Assistant"]
-# )
-
-# Device_Type = st.selectbox(
-#     "Device Type",
-#     ["Mobile", "Desktop", "Tablet"]
-# )
-
-# # =========================
-# # Build input vector
-# # =========================
-# input_dict = {
-#     "Transaction_Amount": txn_amount,
-#     "Transaction_Hour": txn_hour,
-#     "Transaction_Weekday": txn_weekday,
-#     "Account_Balance": account_balance,
-#     "customer_avg_balance": avg_balance,
-#     "balance_dev": balance_dev
-# }
-
-# X_new = pd.DataFrame([input_dict])
-
-# # Add missing columns (one-hot categorical)
-# for col in columns_used:
-#     X_new[col] = 0
-
-# # Map categorical inputs to one-hot columns
-# for col in columns_used:
-#     if col.startswith("Transaction_Device_") and col.endswith(Transaction_Device):
-#         X_new[col] = 1
-#     if col.startswith("Device_Type_") and col.endswith(Device_Type):
-#         X_new[col] = 1
-
-# X_new = X_new[columns_used]
-
-# # =========================
-# # Make prediction
-# # =========================
-# fraud_prob = model.predict_proba(X_new)[0][1]
-
-# st.markdown("### 🔎 Prediction Result")
-# st.metric("Fraud Probability", f"{fraud_prob:.2%}")
-
-# if fraud_prob >= 0.5:
-#     st.error("🚨 Transaction is likely FRAUDULENT")
-# else:
-#     st.success("✅ Transaction appears SAFE")
-
-
-
-
-
-
-
-
 import streamlit as st
 import pandas as pd
 import joblib
@@ -116,7 +17,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # Note: Adjust these path names to match exactly where your main.py saved them
 # In the previous step, we saved to ../models/ and ../data/processed/
 DATA_DIR = os.path.join(BASE_DIR, "../data/processed")
-MODEL_DIR = os.path.join(BASE_DIR, "../models") 
+MODEL_DIR = os.path.join(BASE_DIR, "../model") 
 
 FEATURES_DATA_PATH = os.path.join(DATA_DIR, "bank_transactions_clean.csv") # Used for dropdown lists & freq maps
 MODEL_PATH = os.path.join(MODEL_DIR, "rf_model_imbalanced.pkl") # Or "rf_model_imbalanced.pkl"
@@ -277,3 +178,6 @@ if st.button("Predict Fraud Probability"):
         })
 else:
     st.info("Adjust settings in the sidebar and click Predict.")
+
+
+
