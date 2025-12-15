@@ -1,11 +1,21 @@
 
 
+
+
+
+
 # # dashboard/app.py
 # import streamlit as st
 # import pandas as pd
 # import joblib
 # import numpy as np
 # import os
+# import warnings
+
+# # =========================
+# # Silence unnecessary warnings
+# # =========================
+# warnings.simplefilter(action='ignore', category=FutureWarning)
 
 # # =========================
 # # Paths
@@ -14,15 +24,13 @@
 # DATA_DIR = os.path.join(BASE_DIR, "../data/processed")
 # MODEL_DIR = os.path.join(BASE_DIR, "../model")
 
-# CLEAN_DATA_PATH = os.path.join(DATA_DIR, "bank_transactions_clean.csv")
 # FEATURES_DATA_PATH = os.path.join(DATA_DIR, "bank_transactions_features.csv")
-# MODEL_PATH = os.path.join(MODEL_DIR, "logistic_model.pkl")
+# MODEL_PATH = os.path.join(MODEL_DIR, "rf_model.pkl")
 # COLUMNS_PATH = os.path.join(MODEL_DIR, "columns_used.pkl")
 
 # # =========================
 # # Load data & model
 # # =========================
-# df_clean = pd.read_csv(CLEAN_DATA_PATH)
 # df_features = pd.read_csv(FEATURES_DATA_PATH)
 # model = joblib.load(MODEL_PATH)
 # columns_used = joblib.load(COLUMNS_PATH)
@@ -35,8 +43,8 @@
 # # =========================
 # st.subheader("📊 Key Metrics")
 
-# total_txn = len(df_clean)
-# fraud_txn = int(df_clean["Is_Fraud"].sum())
+# total_txn = len(df_features)
+# fraud_txn = int(df_features["Is_Fraud"].sum())
 # fraud_rate = fraud_txn / total_txn * 100
 
 # col1, col2, col3 = st.columns(3)
@@ -51,17 +59,17 @@
 
 # # Fraud by Hour
 # st.markdown("**Fraud Rate by Transaction Hour**")
-# fraud_by_hour = df_clean.groupby("Transaction_Hour")["Is_Fraud"].mean()
+# fraud_by_hour = df_features.groupby("Transaction_Hour", observed=True)["Is_Fraud"].mean()
 # st.bar_chart(fraud_by_hour)
 
 # # Fraud by Amount Bucket
-# df_clean["amount_bucket"] = pd.cut(
-#     df_clean["Transaction_Amount"],
+# df_features["amount_bucket"] = pd.cut(
+#     df_features["Transaction_Amount"],
 #     bins=[0, 500, 1000, 3000, 10000, np.inf],
 #     labels=["0-500", "500-1000", "1000-3000", "3000-10000", "10000+"]
 # )
 # st.markdown("**Fraud Rate by Amount Bucket**")
-# fraud_by_amt = df_clean.groupby("amount_bucket")["Is_Fraud"].mean()
+# fraud_by_amt = df_features.groupby("amount_bucket", observed=True)["Is_Fraud"].mean()
 # st.bar_chart(fraud_by_amt)
 
 # # =========================
@@ -79,20 +87,13 @@
 # balance_dev = account_balance - avg_balance
 
 # # --- Categorical Inputs ---
-# Transaction_Device = st.selectbox(
-#     "Transaction Device",
-#     ["ATM", "POS", "Mobile App", "USSD", "Voice Assistant"]
-# )
+# transaction_devices = [c.replace("Transaction_Device_", "") for c in columns_used if c.startswith("Transaction_Device_")]
+# device_types = [c.replace("Device_Type_", "") for c in columns_used if c.startswith("Device_Type_")]
+# account_types = [c.replace("Account_Type_", "") for c in columns_used if c.startswith("Account_Type_")]
 
-# Device_Type = st.selectbox(
-#     "Device Type",
-#     ["Mobile", "Desktop", "Tablet"]
-# )
-
-# Account_Type = st.selectbox(
-#     "Account Type",
-#     df_clean["Account_Type"].unique()
-# )
+# Transaction_Device = st.selectbox("Transaction Device", transaction_devices if transaction_devices else ["Unknown"])
+# Device_Type = st.selectbox("Device Type", device_types if device_types else ["Unknown"])
+# Account_Type = st.selectbox("Account Type", account_types if account_types else ["Unknown"])
 
 # # =========================
 # # Build input vector
@@ -108,9 +109,10 @@
 
 # X_new = pd.DataFrame([input_dict])
 
-# # One-hot encode categorical columns safely
+# # Initialize all columns to 0
 # for col in columns_used:
-#     X_new[col] = 0
+#     if col not in X_new.columns:
+#         X_new[col] = 0
 
 # # Map categorical selections to one-hot columns
 # for col in columns_used:
@@ -163,6 +165,15 @@
 
 
 
+
+
+
+
+
+
+
+
+# dashboard/app.py
 import streamlit as st
 import pandas as pd
 import joblib
@@ -177,76 +188,42 @@ DATA_DIR = os.path.join(BASE_DIR, "../data/processed")
 MODEL_DIR = os.path.join(BASE_DIR, "../model")
 
 FEATURES_DATA_PATH = os.path.join(DATA_DIR, "bank_transactions_features.csv")
-MODEL_PATH = os.path.join(MODEL_DIR, "rf_model.pkl")  # Updated to match your trained RF
-COLUMNS_PATH = os.path.join(MODEL_DIR, "columns_used.pkl")
+MODEL_PATH = os.path.join(MODEL_DIR, "rf_model_imbalanced.pkl")       # your trained RF model
+COLUMNS_PATH = os.path.join(MODEL_DIR, "columns_used.pkl") # columns used in training
 
 # =========================
-# Load data & model
+# Load model and columns
 # =========================
-df_features = pd.read_csv(FEATURES_DATA_PATH)
 model = joblib.load(MODEL_PATH)
 columns_used = joblib.load(COLUMNS_PATH)
 
-st.set_page_config(page_title="Fraud Detection Dashboard", layout="wide")
-st.title("🏦 Hybrid Fraud Detection System")
+st.set_page_config(page_title="Fraud Prediction", layout="centered")
+st.title("🏦 Bank Transaction Fraud Prediction")
+
+st.markdown("Enter transaction details below to get an instant fraud prediction:")
 
 # =========================
-# 1️⃣ Key Metrics
+# User Inputs
 # =========================
-st.subheader("📊 Key Metrics")
-total_txn = len(df_features)
-fraud_txn = int(df_features["Is_Fraud"].sum())
-fraud_rate = fraud_txn / total_txn * 100
-
-col1, col2, col3 = st.columns(3)
-col1.metric("Total Transactions", total_txn)
-col2.metric("Fraud Transactions", fraud_txn)
-col3.metric("Fraud Rate (%)", f"{fraud_rate:.2f}")
-
-# =========================
-# 2️⃣ Fraud Analytics
-# =========================
-st.subheader("📈 Fraud Analysis")
-
-# Fraud by Hour
-st.markdown("**Fraud Rate by Transaction Hour**")
-fraud_by_hour = df_features.groupby("Transaction_Hour")["Is_Fraud"].mean()
-st.bar_chart(fraud_by_hour)
-
-# Fraud by Amount Bucket
-df_features["amount_bucket"] = pd.cut(
-    df_features["Transaction_Amount"],
-    bins=[0, 500, 1000, 3000, 10000, np.inf],
-    labels=["0-500", "500-1000", "1000-3000", "3000-10000", "10000+"]
-)
-st.markdown("**Fraud Rate by Amount Bucket**")
-fraud_by_amt = df_features.groupby("amount_bucket")["Is_Fraud"].mean()
-st.bar_chart(fraud_by_amt)
-
-# =========================
-# 3️⃣ Real-Time Hybrid Prediction
-# =========================
-st.subheader("🚨 Real-Time Transaction Risk Check")
-st.markdown("### Transaction Details")
-
-# --- Numeric Inputs ---
 txn_amount = st.number_input("Transaction Amount", 0.0, value=2500.0)
-txn_hour = st.slider("Transaction Hour", 0, 23, 12)
+txn_hour = st.slider("Transaction Hour (0-23)", 0, 23, 12)
 txn_weekday = st.slider("Transaction Weekday (0=Mon)", 0, 6, 2)
 account_balance = st.number_input("Account Balance", 0.0, value=50000.0)
 avg_balance = st.number_input("Customer Avg Balance", 0.0, value=45000.0)
 balance_dev = account_balance - avg_balance
 
-# --- Categorical Inputs ---
 Transaction_Device = st.selectbox(
     "Transaction Device",
     ["ATM", "POS", "Mobile App", "USSD", "Voice Assistant"]
 )
-Device_Type = st.selectbox("Device Type", ["Mobile", "Desktop", "Tablet"])
-Account_Type = st.selectbox("Account Type", df_features["Account_Type"].unique())
+
+Device_Type = st.selectbox(
+    "Device Type",
+    ["Mobile", "Desktop", "Tablet"]
+)
 
 # =========================
-# Build input vector safely
+# Build input vector
 # =========================
 input_dict = {
     "Transaction_Amount": txn_amount,
@@ -259,55 +236,28 @@ input_dict = {
 
 X_new = pd.DataFrame([input_dict])
 
-# Initialize all columns to 0
+# Add missing columns (one-hot categorical)
 for col in columns_used:
     X_new[col] = 0
 
-# Map categorical selections
+# Map categorical inputs to one-hot columns
 for col in columns_used:
-    if f"Transaction_Device_{Transaction_Device}" == col:
+    if col.startswith("Transaction_Device_") and col.endswith(Transaction_Device):
         X_new[col] = 1
-    if f"Device_Type_{Device_Type}" == col:
-        X_new[col] = 1
-    if f"Account_Type_{Account_Type}" == col:
+    if col.startswith("Device_Type_") and col.endswith(Device_Type):
         X_new[col] = 1
 
 X_new = X_new[columns_used]
 
 # =========================
-# ML Probability
+# Make prediction
 # =========================
-ml_prob = model.predict_proba(X_new)[0][1]
+fraud_prob = model.predict_proba(X_new)[0][1]
 
-# =========================
-# Rule Engine
-# =========================
-rule_score = 0
-if txn_amount > 3000:
-    rule_score += 3
-elif txn_amount > 1500:
-    rule_score += 2
+st.markdown("### 🔎 Prediction Result")
+st.metric("Fraud Probability", f"{fraud_prob:.2%}")
 
-if txn_hour in [0,1,2,3,4,5]:
-    rule_score += 2
-
-rule_score_norm = min(rule_score / 7, 1.0)
-
-# =========================
-# Hybrid Score
-# =========================
-hybrid_score = 0.7 * ml_prob + 0.3 * rule_score_norm
-
-# =========================
-# Show metrics & decision
-# =========================
-st.markdown("### 🔎 Risk Assessment")
-col1, col2, col3 = st.columns(3)
-col1.metric("ML Fraud Probability", f"{ml_prob:.2f}")
-col2.metric("Rule Score", rule_score)
-col3.metric("Hybrid Risk Score", f"{hybrid_score:.2f}")
-
-if rule_score >= 6 or hybrid_score >= 0.6:
-    st.error("🚨 FRAUD ALERT — Transaction BLOCKED")
+if fraud_prob >= 0.5:
+    st.error("🚨 Transaction is likely FRAUDULENT")
 else:
-    st.success("✅ Transaction APPROVED")
+    st.success("✅ Transaction appears SAFE")
