@@ -383,7 +383,7 @@ MODEL_DIR = os.path.join(BASE_DIR, "../model")
 @st.cache_resource
 def load_resources():
     paths = {
-        "model": os.path.join(MODEL_DIR, "rf_model_imba lanced.pkl"),
+        "model": os.path.join(MODEL_DIR, "rf_model_imbalanced.pkl"),
         "scaler": os.path.join(MODEL_DIR, "scaler.pkl"),
         "columns": os.path.join(MODEL_DIR, "columns_used.pkl"),
         "freq_maps": os.path.join(MODEL_DIR, "freq_maps.pkl"),
