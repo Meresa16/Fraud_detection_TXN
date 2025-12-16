@@ -23,3 +23,6 @@ Detect fraudulent bank transactions for Mobile App and USSD channels. Includes r
 - Deep learning / anomaly detection
 - Integration with real banking systems
 - Advanced dashboards
+
+
+mlflow ui --backend-store-uri sqlite:///mlflow.db
